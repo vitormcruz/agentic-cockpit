@@ -1,5 +1,8 @@
+import { PainelDoc } from './Doc'
+import { PainelEstado } from './Estado'
 import { PainelHtml } from './Html'
 import { PainelImagem } from './Imagem'
+import { PainelLive } from './Live'
 import { PainelMarkdown } from './Markdown'
 import { PainelMermaid } from './Mermaid'
 import { PainelSvg } from './Svg'
@@ -68,6 +71,16 @@ const HTML_DEMO = `<!doctype html>
 </html>`
 
 export const PAINEL_REGISTRY = {
+  doc: {
+    component: PainelDoc,
+    label: 'Documento do contexto',
+    params: {},
+  },
+  estado: {
+    component: PainelEstado,
+    label: 'Estado do backend',
+    params: {},
+  },
   html: {
     component: PainelHtml,
     label: 'HTML sandbox',
@@ -76,6 +89,11 @@ export const PAINEL_REGISTRY = {
   imagem: {
     component: PainelImagem,
     label: 'Imagem local',
+    params: {},
+  },
+  live: {
+    component: PainelLive,
+    label: 'Estado ao vivo',
     params: {},
   },
   markdown: {
@@ -103,8 +121,11 @@ export const PAINEL_REGISTRY = {
 export type PainelTipo = keyof typeof PAINEL_REGISTRY
 
 export const COMPONENTES_PAINEIS = {
+  doc: PAINEL_REGISTRY.doc.component,
+  estado: PAINEL_REGISTRY.estado.component,
   html: PAINEL_REGISTRY.html.component,
   imagem: PAINEL_REGISTRY.imagem.component,
+  live: PAINEL_REGISTRY.live.component,
   markdown: PAINEL_REGISTRY.markdown.component,
   mermaid: PAINEL_REGISTRY.mermaid.component,
   svg: PAINEL_REGISTRY.svg.component,
