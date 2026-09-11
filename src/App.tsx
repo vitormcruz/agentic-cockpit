@@ -3,8 +3,10 @@ import {
   type DockviewReadyEvent,
   themeDark,
 } from 'dockview-react'
+import { PainelImagem } from './paineis/Imagem'
 import { PainelMarkdown } from './paineis/Markdown'
 import { PainelMermaid } from './paineis/Mermaid'
+import { PainelSvg } from './paineis/Svg'
 import { PainelTexto } from './paineis/Texto'
 import './App.css'
 
@@ -37,8 +39,10 @@ const MARKDOWN_DEMO = [
 ].join('\n')
 
 const components = {
+  imagem: PainelImagem,
   markdown: PainelMarkdown,
   mermaid: PainelMermaid,
+  svg: PainelSvg,
   texto: PainelTexto,
 }
 
@@ -74,6 +78,26 @@ function addInitialPanels({ api }: DockviewReadyEvent) {
   A[Entrada] --> B{Renderer}
   B --> C[Conteúdo]
   B --> D[Layout Dockview]`,
+    },
+  })
+
+  api.addPanel({
+    id: 'svg',
+    component: 'svg',
+    title: 'SVG inline',
+    position: {
+      direction: 'right',
+      referencePanel: 'mermaid',
+    },
+  })
+
+  api.addPanel({
+    id: 'imagem',
+    component: 'imagem',
+    title: 'Imagem local',
+    position: {
+      direction: 'right',
+      referencePanel: 'svg',
     },
   })
 }

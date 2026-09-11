@@ -137,3 +137,31 @@
 .panel-status--error {
   color: #ffb4ab;
 }
+
+.visual-panel {
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.inline-svg,
+.local-image {
+  width: min(100%, 36rem);
+  height: auto;
+}
+
+.inline-svg {
+  border-radius: 0.75rem;
+}
+
+.local-image {
+  border: 1px solid #2c3b59;
+  border-radius: 0.75rem;
+}
+
+.visual-caption {
+  margin: 0;
+  color: #b7c2d8;
+  font-size: 0.85rem;
+  text-align: center;
+}
