@@ -4,6 +4,7 @@ import {
   themeDark,
 } from 'dockview-react'
 import { PainelMarkdown } from './paineis/Markdown'
+import { PainelMermaid } from './paineis/Mermaid'
 import { PainelTexto } from './paineis/Texto'
 import './App.css'
 
@@ -37,6 +38,7 @@ const MARKDOWN_DEMO = [
 
 const components = {
   markdown: PainelMarkdown,
+  mermaid: PainelMermaid,
   texto: PainelTexto,
 }
 
@@ -57,6 +59,22 @@ function addInitialPanels({ api }: DockviewReadyEvent) {
       referencePanel: 'texto',
     },
     params: { content: MARKDOWN_DEMO },
+  })
+
+  api.addPanel({
+    id: 'mermaid',
+    component: 'mermaid',
+    title: 'Mermaid',
+    position: {
+      direction: 'below',
+      referencePanel: 'texto',
+    },
+    params: {
+      definition: `flowchart LR
+  A[Entrada] --> B{Renderer}
+  B --> C[Conteúdo]
+  B --> D[Layout Dockview]`,
+    },
   })
 }
 

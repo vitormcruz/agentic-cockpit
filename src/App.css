@@ -112,3 +112,28 @@
   background: #1b2943;
   color: #ffffff;
 }
+
+.mermaid-panel {
+  justify-content: center;
+}
+
+.mermaid-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.mermaid-container svg {
+  width: min(100%, 34rem);
+  height: auto;
+}
+
+.panel-status {
+  margin: 1rem 0 0;
+  color: #b7c2d8;
+  text-align: center;
+}
+
+.panel-status--error {
+  color: #ffb4ab;
+}
