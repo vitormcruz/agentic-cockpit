@@ -80,6 +80,11 @@
   opacity: 0.6;
 }
 
+.panel-actions .panel-actions__secondary {
+  background: transparent;
+  color: #d8e4ff;
+}
+
 .panel-actions button:focus-visible,
 .panel-actions select:focus-visible {
   outline: 2px solid #ffffff;
