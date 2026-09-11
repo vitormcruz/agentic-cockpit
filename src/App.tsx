@@ -193,8 +193,13 @@ function applyDefaultLayout(api: DockviewApi) {
 }
 
 function createDynamicPanel(api: DockviewApi, tipo: PainelTipo) {
-  dynamicPanelSequence += 1
-  const id = `painel-${tipo}-${dynamicPanelSequence}`
+  let id: string
+
+  do {
+    dynamicPanelSequence += 1
+    id = `painel-${tipo}-${dynamicPanelSequence}`
+  } while (api.getPanel(id))
+
   const title = `${PAINEL_REGISTRY[tipo].label} ${dynamicPanelSequence}`
   addRegisteredPanel(api, { id, tipo, title })
 }
