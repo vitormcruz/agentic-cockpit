@@ -16,36 +16,99 @@
   box-shadow: 0 1rem 2rem rgb(0 0 0 / 20%);
 }
 
-.demo-panel {
+.content-panel {
   display: flex;
   height: 100%;
   flex-direction: column;
-  justify-content: center;
-  padding: clamp(1.25rem, 5vw, 4rem);
+  overflow: auto;
+  padding: clamp(1.25rem, 4vw, 3rem);
   background:
     radial-gradient(circle at 100% 0%, rgb(64 104 189 / 22%), transparent 40%),
     #121a2b;
   color: #e7edf8;
 }
 
-.demo-panel__eyebrow {
-  color: #91b7ff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.text-panel {
+  justify-content: center;
 }
 
-.demo-panel h2 {
-  margin: 0.5rem 0;
-  color: #ffffff;
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-}
-
-.demo-panel p {
-  max-width: 34rem;
+.text-panel pre {
   margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #d8e4ff;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.markdown-panel {
+  max-width: 34rem;
+  margin: 0 auto;
+  color: #d8e4ff;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.markdown-panel h1,
+.markdown-panel h2 {
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.markdown-panel h1 {
+  margin-top: 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.markdown-panel h2 {
+  margin-top: 2rem;
+  font-size: 1.2rem;
+}
+
+.markdown-panel code {
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.25rem;
+  background: #202d48;
+  color: #b9d1ff;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.9em;
+}
+
+.markdown-panel pre {
+  overflow: auto;
+  padding: 1rem;
+  border: 1px solid #2c3b59;
+  border-radius: 0.35rem;
+  background: #0d1526;
+}
+
+.markdown-panel pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.markdown-panel blockquote {
+  margin-inline: 0;
+  padding-left: 1rem;
+  border-left: 3px solid #6d9fff;
   color: #b7c2d8;
-  font-size: 1rem;
-  line-height: 1.6;
+}
+
+.markdown-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.markdown-panel th,
+.markdown-panel td {
+  padding: 0.6rem;
+  border: 1px solid #2c3b59;
+  text-align: left;
+}
+
+.markdown-panel th {
+  background: #1b2943;
+  color: #ffffff;
 }

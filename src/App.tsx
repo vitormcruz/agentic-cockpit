@@ -1,56 +1,62 @@
 import {
   DockviewReact,
   type DockviewReadyEvent,
-  type IDockviewPanelProps,
   themeDark,
 } from 'dockview-react'
+import { PainelMarkdown } from './paineis/Markdown'
+import { PainelTexto } from './paineis/Texto'
 import './App.css'
 
-type DemoPanelParams = {
-  description: string
-  eyebrow: string
-  heading: string
-}
+const TEXTO_DEMO = `Painel de texto plano
 
-function DemoPanel({ params }: IDockviewPanelProps<DemoPanelParams>) {
-  return (
-    <article className="demo-panel">
-      <span className="demo-panel__eyebrow">{params.eyebrow}</span>
-      <h2>{params.heading}</h2>
-      <p>{params.description}</p>
-    </article>
-  )
-}
+Conteúdo monoespaçado para validar leitura rápida e quebra de linha dentro
+de um painel redimensionável do Dockview.`
+
+const MARKDOWN_DEMO = [
+  '# Markdown no painel',
+  '',
+  'O renderer aceita conteúdo rico sem tirar o painel do layout.',
+  '',
+  '## O que está sendo validado',
+  '',
+  '- headings e listas',
+  '- bloco de código',
+  '- tabela com **GFM**',
+  '',
+  '```tsx',
+  "const painel = 'conteúdo heterogêneo'",
+  '```',
+  '',
+  '> O Dockview gerencia a janela. O app decide como renderizar o conteúdo.',
+  '',
+  '| Tipo | Renderer | Estado |',
+  '| --- | --- | --- |',
+  '| Texto | `<pre>` | pronto |',
+  '| Markdown | `react-markdown` | pronto |',
+].join('\n')
 
 const components = {
-  demo: DemoPanel,
+  markdown: PainelMarkdown,
+  texto: PainelTexto,
 }
 
 function addInitialPanels({ api }: DockviewReadyEvent) {
   api.addPanel({
-    id: 'overview',
-    component: 'demo',
-    title: 'Visão geral',
-    params: {
-      description: 'Este painel será a base para os renderers do experimento.',
-      eyebrow: 'Dockview + React',
-      heading: 'Visão geral',
-    },
+    id: 'texto',
+    component: 'texto',
+    title: 'Texto plano',
+    params: { content: TEXTO_DEMO },
   })
 
   api.addPanel({
-    id: 'notes',
-    component: 'demo',
-    title: 'Notas do lab',
+    id: 'markdown',
+    component: 'markdown',
+    title: 'Markdown',
     position: {
       direction: 'right',
-      referencePanel: 'overview',
+      referencePanel: 'texto',
     },
-    params: {
-      description: 'Arraste as abas e redimensione o split para explorar o docking.',
-      eyebrow: 'Painel secundário',
-      heading: 'Notas do lab',
-    },
+    params: { content: MARKDOWN_DEMO },
   })
 }
 
