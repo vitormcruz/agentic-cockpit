@@ -12,6 +12,8 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 
 CONFIG_REPO_ENV = "OPENCODE_CONFIG_REPO"
 DEFAULT_CONFIG_REPO = Path(__file__).resolve().parents[2] / "opencode-global-config"
+PIPELINE_STEP_COUNT = 4
+STREAM_INTERVAL_SECONDS = 1
 
 app = FastAPI(title="Painel Dinâmico Lab")
 
@@ -80,20 +82,27 @@ def get_markdown() -> str:
         raise raise_backend_error(error) from error
 
 
-def create_stream_payload() -> dict[str, object]:
+def create_stream_payload(passo: int) -> dict[str, object]:
     state = read_state()
     return {
         "timestamp": current_timestamp(),
         "resumo": state_summary(state),
         "estado": state,
+        "passo": passo,
     }
 
 
 async def event_stream() -> AsyncIterator[str]:
+    passo = 1
+    next_emit_at = asyncio.get_running_loop().time()
+
     while True:
-        payload = json.dumps(create_stream_payload(), ensure_ascii=False)
+        payload = json.dumps(create_stream_payload(passo), ensure_ascii=False)
         yield f"data: {payload}\n\n"
-        await asyncio.sleep(2)
+        passo = passo % PIPELINE_STEP_COUNT + 1
+        next_emit_at += STREAM_INTERVAL_SECONDS
+        delay = max(0, next_emit_at - asyncio.get_running_loop().time())
+        await asyncio.sleep(delay)
 
 
 @app.get("/api/stream")

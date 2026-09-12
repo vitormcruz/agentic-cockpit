@@ -10,6 +10,7 @@ import {
   PAINEL_REGISTRY,
   type PainelTipo,
 } from './paineis/registry'
+import { PipelineStreamProvider } from './paineis/stream'
 import './App.css'
 
 type PainelPosicao = {
@@ -305,12 +306,14 @@ function App() {
           </button>
         </div>
       </header>
-      <DockviewReact
-        className="dockview-host"
-        components={COMPONENTES_PAINEIS}
-        onReady={handleReady}
-        theme={themeDark}
-      />
+      <PipelineStreamProvider>
+        <DockviewReact
+          className="dockview-host"
+          components={COMPONENTES_PAINEIS}
+          onReady={handleReady}
+          theme={themeDark}
+        />
+      </PipelineStreamProvider>
     </main>
   )
 }
