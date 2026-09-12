@@ -432,6 +432,125 @@
   background: #17243c;
 }
 
+.workflow-panel {
+  gap: 1rem;
+}
+
+.workflow-panel__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  color: #d8e4ff;
+  line-height: 1.5;
+}
+
+.workflow-svg-shell {
+  width: 100%;
+  overflow-x: auto;
+  padding: 1rem;
+  border: 1px solid #2c3b59;
+  border-radius: 0.5rem;
+  background: #0d1526;
+}
+
+.workflow-svg {
+  display: block;
+  width: 100%;
+  min-width: 740px;
+  height: auto;
+}
+
+.workflow-svg__edge {
+  fill: none;
+  stroke: #6d9fff;
+  stroke-width: 3;
+}
+
+.workflow-svg marker path {
+  fill: #6d9fff;
+}
+
+.workflow-svg__step rect {
+  fill: #ffffff;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.workflow-svg__step.workflow-step--active rect {
+  stroke: #0b3b80;
+  stroke-width: 4;
+}
+
+.workflow-svg__label {
+  fill: #17243c;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.workflow-svg__number {
+  fill: #d8e4ff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.workflow-flow-canvas {
+  width: 100%;
+  height: 250px;
+  min-height: 220px;
+  overflow: hidden;
+  border: 1px solid #2c3b59;
+  border-radius: 0.5rem;
+  background: #0d1526;
+}
+
+.workflow-flow-canvas .react-flow {
+  background: #0d1526;
+}
+
+.workflow-flow__node {
+  display: flex;
+  width: 128px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.workflow-flow__node-card {
+  display: grid;
+  width: 128px;
+  min-height: 58px;
+  padding: 0.6rem;
+  border: 3px solid #ffffff;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  color: #17243c;
+  font-size: 0.82rem;
+  font-weight: 700;
+  place-items: center;
+  text-align: center;
+}
+
+.workflow-flow__node.workflow-step--active .workflow-flow__node-card {
+  border-color: #0b3b80;
+}
+
+.workflow-flow__node-number {
+  color: #d8e4ff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.workflow-flow__handle {
+  top: 29px;
+  width: 1px;
+  height: 1px;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+}
+
 .fab-button {
   position: fixed;
   right: 1.5rem;

@@ -8,6 +8,8 @@ import { PainelMarkdown } from './Markdown'
 import { PainelMermaid } from './Mermaid'
 import { PainelSvg } from './Svg'
 import { PainelTexto } from './Texto'
+import { PainelWorkflowFlow } from './WorkflowFlow'
+import { PainelWorkflowSvg } from './WorkflowSvg'
 
 const TEXTO_DEMO = `Painel de texto plano
 
@@ -117,6 +119,16 @@ export const PAINEL_REGISTRY = {
     label: 'Texto plano',
     params: { content: TEXTO_DEMO },
   },
+  workflowFlow: {
+    component: PainelWorkflowFlow,
+    label: 'Workflow React Flow',
+    params: {},
+  },
+  workflowSvg: {
+    component: PainelWorkflowSvg,
+    label: 'Workflow SVG',
+    params: {},
+  },
 } as const
 
 export type PainelTipo = keyof typeof PAINEL_REGISTRY
@@ -132,4 +144,6 @@ export const COMPONENTES_PAINEIS = {
   mermaid: PAINEL_REGISTRY.mermaid.component,
   svg: PAINEL_REGISTRY.svg.component,
   texto: PAINEL_REGISTRY.texto.component,
+  workflowFlow: PAINEL_REGISTRY.workflowFlow.component,
+  workflowSvg: PAINEL_REGISTRY.workflowSvg.component,
 }
