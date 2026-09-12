@@ -11,6 +11,7 @@ type PopoverProps = {
   dockviewReady: boolean
   onClose: () => void
   onOpenFloating: () => void
+  onOpenFloatingCard: () => void
   onOpenPopout: () => void
   onOpenModal: () => void
   onOpenDrawer: () => void
@@ -44,6 +45,7 @@ export function Popover({
   dockviewReady,
   onClose,
   onOpenFloating,
+  onOpenFloatingCard,
   onOpenPopout,
   onOpenModal,
   onOpenDrawer,
@@ -133,6 +135,9 @@ export function Popover({
       <div className="fab-popover__actions">
         <button type="button" onClick={onOpenFloating} disabled={!canUseDockview}>
           Floating group
+        </button>
+        <button type="button" onClick={onOpenFloatingCard} disabled={!canUseDockview}>
+          Floating card
         </button>
         <button type="button" onClick={onOpenPopout} disabled={!canUseDockview}>
           Popout window

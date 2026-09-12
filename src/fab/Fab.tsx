@@ -9,16 +9,18 @@ import { Drawer } from './Drawer'
 import { Modal } from './Modal'
 import { Popover } from './Popover'
 import { Toast } from './Toast'
+import { tocarSomAberturaCard } from './som'
 
 type FabProps = {
   dockviewReady: boolean
   onOpenFloating: (estado: EstadoBackend) => void
+  onOpenFloatingCard: (estado: EstadoBackend) => void
   onOpenPopout: (estado: EstadoBackend) => void
 }
 
 type OverlayType = 'modal' | 'drawer' | 'toast'
 
-export function Fab({ dockviewReady, onOpenFloating, onOpenPopout }: FabProps) {
+export function Fab({ dockviewReady, onOpenFloating, onOpenFloatingCard, onOpenPopout }: FabProps) {
   const anchorRef = useRef<HTMLButtonElement>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const [estado, setEstado] = useState<EstadoBackend>()
@@ -90,6 +92,14 @@ export function Fab({ dockviewReady, onOpenFloating, onOpenPopout }: FabProps) {
     }
   }
 
+  function openFloatingCard() {
+    if (estado) {
+      tocarSomAberturaCard()
+      onOpenFloatingCard(estado)
+      closePopover()
+    }
+  }
+
   function openPopout() {
     if (estado) {
       onOpenPopout(estado)
@@ -119,6 +129,7 @@ export function Fab({ dockviewReady, onOpenFloating, onOpenPopout }: FabProps) {
           dockviewReady={dockviewReady}
           onClose={closePopover}
           onOpenFloating={openFloating}
+          onOpenFloatingCard={openFloatingCard}
           onOpenPopout={openPopout}
           onOpenModal={() => openOverlay('modal')}
           onOpenDrawer={() => openOverlay('drawer')}

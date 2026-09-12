@@ -713,6 +713,78 @@
   padding: 1.25rem;
 }
 
+.floating-card-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  gap: 0.75rem;
+  box-sizing: border-box;
+  padding: 0 0.65rem;
+  color: #e7edf8;
+}
+
+.floating-card-tab__title {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-card-tab__close {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.15rem;
+  line-height: 1;
+  place-items: center;
+}
+
+.floating-card-tab__close:hover {
+  background: #2b3d60;
+}
+
+.floating-card-tab__close:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
+
+.dv-resize-container:has(.floating-card-tab) {
+  border: 1px solid #496a9d;
+  border-radius: 1rem;
+  box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 48%), 0 0.25rem 0.75rem rgb(0 0 0 / 28%);
+}
+
+.dv-resize-container:has(.floating-card-tab) > .dv-floating-titlebar {
+  display: none;
+}
+
+.dv-resize-container:has(.floating-card-tab) > .dv-grid-view {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container {
+  height: 2.25rem;
+}
+
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container .dv-tab {
+  margin: 0;
+  padding: 0;
+}
+
 .fab-overlay {
   position: fixed;
   inset: 0;

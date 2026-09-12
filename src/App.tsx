@@ -6,6 +6,7 @@ import {
   themeDark,
 } from 'dockview-react'
 import { Fab } from './fab/Fab'
+import { CardTab, FLOATING_CARD_TAB_COMPONENT } from './fab/CardTab'
 import { FAB_INFO_COMPONENT } from './fab/InfoFlutuante'
 import {
   COMPONENTES_PAINEIS,
@@ -235,6 +236,23 @@ function addFloatingInfoPanel(api: DockviewApi, estado: EstadoBackend) {
   })
 }
 
+function addFloatingCardPanel(api: DockviewApi, estado: EstadoBackend) {
+  api.addPanel({
+    id: createFabInfoPanelId(api),
+    component: FAB_INFO_COMPONENT,
+    tabComponent: FLOATING_CARD_TAB_COMPONENT,
+    params: { estado },
+    title: 'Floating card',
+    floating: {
+      x: 128,
+      y: 128,
+      width: 360,
+      height: 300,
+      dragHandle: 'tabbar',
+    },
+  })
+}
+
 function addPopoutInfoPanel(api: DockviewApi, estado: EstadoBackend) {
   const panel = api.addPanel({
     id: createFabInfoPanelId(api),
@@ -322,6 +340,12 @@ function App() {
     }
   }
 
+  function handleOpenFloatingCard(estado: EstadoBackend) {
+    if (dockviewApi) {
+      addFloatingCardPanel(dockviewApi, estado)
+    }
+  }
+
   function handleOpenPopout(estado: EstadoBackend) {
     if (dockviewApi) {
       addPopoutInfoPanel(dockviewApi, estado)
@@ -365,6 +389,7 @@ function App() {
         <DockviewReact
           className="dockview-host"
           components={COMPONENTES_PAINEIS}
+          tabComponents={{ [FLOATING_CARD_TAB_COMPONENT]: CardTab }}
           onReady={handleReady}
           theme={themeDark}
         />
@@ -372,6 +397,7 @@ function App() {
       <Fab
         dockviewReady={Boolean(dockviewApi)}
         onOpenFloating={handleOpenFloating}
+        onOpenFloatingCard={handleOpenFloatingCard}
         onOpenPopout={handleOpenPopout}
       />
     </main>
