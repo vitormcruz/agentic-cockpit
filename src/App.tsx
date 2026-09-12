@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   DockviewReact,
   type DockviewApi,
+  type DockviewGroupPanel,
   type DockviewReadyEvent,
   themeDark,
 } from 'dockview-react'
@@ -221,6 +222,43 @@ function createFabInfoPanelId(api: DockviewApi) {
   return id
 }
 
+function isFloatingCardPanel(panel: { api: { tabComponent: string | undefined } }) {
+  return panel.api.tabComponent === FLOATING_CARD_TAB_COMPONENT
+}
+
+function isFloatingCardGroup(group: DockviewGroupPanel) {
+  return group.panels.some(isFloatingCardPanel)
+}
+
+function isFloatingCardTransfer(
+  api: DockviewApi,
+  data: { viewId: string; groupId: string; panelId: string | null } | undefined,
+) {
+  if (!data || data.viewId !== api.id) {
+    return false
+  }
+
+  const group = api.groups.find((candidate) => candidate.id === data.groupId)
+  if (!group) {
+    return false
+  }
+
+  if (data.panelId) {
+    const panel = api.getPanel(data.panelId)
+    return panel !== undefined && isFloatingCardPanel(panel)
+  }
+
+  return isFloatingCardGroup(group)
+}
+
+function lockFloatingCardGroups(api: DockviewApi) {
+  for (const group of api.groups) {
+    if (isFloatingCardGroup(group)) {
+      group.api.locked = 'no-drop-target'
+    }
+  }
+}
+
 function addFloatingInfoPanel(api: DockviewApi, estado: EstadoBackend) {
   api.addPanel({
     id: createFabInfoPanelId(api),
@@ -237,7 +275,7 @@ function addFloatingInfoPanel(api: DockviewApi, estado: EstadoBackend) {
 }
 
 function addFloatingCardPanel(api: DockviewApi, estado: EstadoBackend) {
-  api.addPanel({
+  const panel = api.addPanel({
     id: createFabInfoPanelId(api),
     component: FAB_INFO_COMPONENT,
     tabComponent: FLOATING_CARD_TAB_COMPONENT,
@@ -251,6 +289,7 @@ function addFloatingCardPanel(api: DockviewApi, estado: EstadoBackend) {
       dragHandle: 'tabbar',
     },
   })
+  panel.group.api.locked = 'no-drop-target'
 }
 
 function addPopoutInfoPanel(api: DockviewApi, estado: EstadoBackend) {
@@ -270,12 +309,14 @@ function App() {
   const [dockviewApi, setDockviewApi] = useState<DockviewApi>()
   const [tipoSelecionado, setTipoSelecionado] = useState<PainelTipo>('texto')
   const layoutSubscriptionRef = useRef<{ dispose(): void } | undefined>(undefined)
+  const dndSubscriptionsRef = useRef<{ dispose(): void }[]>([])
   const persistTimerRef = useRef<number | undefined>(undefined)
   const isApplyingLayoutRef = useRef(false)
 
   useEffect(() => {
     return () => {
       layoutSubscriptionRef.current?.dispose()
+      dndSubscriptionsRef.current.forEach((subscription) => subscription.dispose())
       cancelScheduledPersistence(persistTimerRef)
     }
   }, [])
@@ -300,9 +341,35 @@ function App() {
       if (!restoredLayout) {
         applyDefaultLayout(api)
       }
+
+      lockFloatingCardGroups(api)
     } finally {
       isApplyingLayoutRef.current = false
     }
+
+    dndSubscriptionsRef.current.forEach((subscription) => subscription.dispose())
+    dndSubscriptionsRef.current = [
+      api.onWillDragPanel(({ panel, nativeEvent }) => {
+        if (isFloatingCardPanel(panel)) {
+          nativeEvent.preventDefault()
+        }
+      }),
+      api.onWillDragGroup(({ group, nativeEvent }) => {
+        if (isFloatingCardGroup(group)) {
+          nativeEvent.preventDefault()
+        }
+      }),
+      api.onWillShowOverlay((event) => {
+        if (isFloatingCardTransfer(api, event.getData())) {
+          event.preventDefault()
+        }
+      }),
+      api.onWillDrop((event) => {
+        if (isFloatingCardTransfer(api, event.getData())) {
+          event.preventDefault()
+        }
+      }),
+    ]
 
     layoutSubscriptionRef.current?.dispose()
     layoutSubscriptionRef.current = api.onDidLayoutChange(() => {

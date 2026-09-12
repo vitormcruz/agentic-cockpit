@@ -723,6 +723,9 @@
   box-sizing: border-box;
   padding: 0 0.65rem;
   color: #e7edf8;
+  cursor: move;
+  touch-action: none;
+  user-select: none;
 }
 
 .floating-card-tab__title {
@@ -765,6 +768,10 @@
   border: 1px solid #496a9d;
   border-radius: 1rem;
   box-shadow: 0 1.25rem 2.5rem rgb(0 0 0 / 48%), 0 0.25rem 0.75rem rgb(0 0 0 / 28%);
+}
+
+.dv-resize-container:has(.floating-card-tab).floating-card-manual-dragging {
+  cursor: grabbing;
 }
 
 .dv-resize-container:has(.floating-card-tab) > .dv-floating-titlebar {
