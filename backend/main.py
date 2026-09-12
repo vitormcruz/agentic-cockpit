@@ -7,9 +7,10 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, StreamingResponse
 
+from .agente import AgenteError, process_agent_message, send_thinking_heartbeat
 from .servicos import InventarioServicosError, detectar_servicos
 
 CONFIG_REPO_ENV = "OPENCODE_CONFIG_REPO"
@@ -138,3 +139,57 @@ async def stream_state() -> StreamingResponse:
             "X-Accel-Buffering": "no",
         },
     )
+
+
+async def _send_agent_event(websocket: WebSocket, event: dict[str, object]) -> None:
+    await websocket.send_json(event)
+
+
+async def _handle_agent_message(websocket: WebSocket, text: str) -> None:
+    await _send_agent_event(websocket, {"type": "thinking"})
+    heartbeat_task = asyncio.create_task(send_thinking_heartbeat(websocket.send_json))
+
+    try:
+        response = await process_agent_message(text)
+        for command in response.commands:
+            await _send_agent_event(websocket, {"type": "command", "command": command})
+        await _send_agent_event(websocket, {"type": "message", "text": response.message})
+    except AgenteError as error:
+        await _send_agent_event(websocket, {"type": "message", "text": str(error)})
+    except Exception:
+        await _send_agent_event(
+            websocket,
+            {"type": "message", "text": "O agente encontrou um erro inesperado. Tente novamente."},
+        )
+    finally:
+        heartbeat_task.cancel()
+        await asyncio.gather(heartbeat_task, return_exceptions=True)
+
+
+@app.websocket("/ws/agente")
+async def agent_websocket(websocket: WebSocket) -> None:
+    await websocket.accept()
+
+    while True:
+        try:
+            payload = await websocket.receive_json()
+        except WebSocketDisconnect:
+            return
+        except (TypeError, ValueError):
+            await _send_agent_event(
+                websocket,
+                {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+            )
+            continue
+
+        if not isinstance(payload, dict) or not isinstance(payload.get("texto"), str):
+            await _send_agent_event(
+                websocket,
+                {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+            )
+            continue
+
+        try:
+            await _handle_agent_message(websocket, payload["texto"])
+        except WebSocketDisconnect:
+            return
