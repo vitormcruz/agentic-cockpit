@@ -12,6 +12,7 @@ export type AgenteContextValue = {
   isPensando: boolean
   isConectado: boolean
   servicos: Servico[]
+  atualizarServicos: (services: Servico[]) => void
   enviarMensagem: (text: string) => void
 }
 
@@ -184,7 +185,7 @@ export function useAgente({ api, onNotify }: UseAgenteOptions): AgenteContextVal
     [appendMessage],
   )
 
-  return { mensagens, isPensando, isConectado, servicos, enviarMensagem }
+  return { mensagens, isPensando, isConectado, servicos, atualizarServicos: updateServices, enviarMensagem }
 }
 
 export function AgenteProvider({ value, children }: { value: AgenteContextValue; children: ReactNode }) {

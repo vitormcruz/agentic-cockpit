@@ -1,4 +1,5 @@
 import { FAB_INFO_COMPONENT, PainelInfoFlutuante } from '../fab/InfoFlutuante'
+import { PainelAgente } from './Agente'
 import { PainelDoc } from './Doc'
 import { PainelEstado } from './Estado'
 import { PainelHtml } from './Html'
@@ -10,6 +11,7 @@ import { PainelSvg } from './Svg'
 import { PainelTexto } from './Texto'
 import { PainelWorkflowFlow } from './WorkflowFlow'
 import { PainelWorkflowSvg } from './WorkflowSvg'
+import { PainelServicos } from './Servicos'
 
 const TEXTO_DEMO = `Painel de texto plano
 
@@ -74,6 +76,11 @@ const HTML_DEMO = `<!doctype html>
 </html>`
 
 export const PAINEL_REGISTRY = {
+  agente: {
+    component: PainelAgente,
+    label: 'Agente LLM',
+    params: {},
+  },
   doc: {
     component: PainelDoc,
     label: 'Documento do contexto',
@@ -119,6 +126,11 @@ export const PAINEL_REGISTRY = {
     label: 'Texto plano',
     params: { content: TEXTO_DEMO },
   },
+  servicos: {
+    component: PainelServicos,
+    label: 'Serviços ativos',
+    params: {},
+  },
   workflowFlow: {
     component: PainelWorkflowFlow,
     label: 'Workflow React Flow',
@@ -135,6 +147,7 @@ export type PainelTipo = keyof typeof PAINEL_REGISTRY
 
 export const COMPONENTES_PAINEIS = {
   [FAB_INFO_COMPONENT]: PainelInfoFlutuante,
+  agente: PAINEL_REGISTRY.agente.component,
   doc: PAINEL_REGISTRY.doc.component,
   estado: PAINEL_REGISTRY.estado.component,
   html: PAINEL_REGISTRY.html.component,
@@ -144,6 +157,7 @@ export const COMPONENTES_PAINEIS = {
   mermaid: PAINEL_REGISTRY.mermaid.component,
   svg: PAINEL_REGISTRY.svg.component,
   texto: PAINEL_REGISTRY.texto.component,
+  servicos: PAINEL_REGISTRY.servicos.component,
   workflowFlow: PAINEL_REGISTRY.workflowFlow.component,
   workflowSvg: PAINEL_REGISTRY.workflowSvg.component,
 }
