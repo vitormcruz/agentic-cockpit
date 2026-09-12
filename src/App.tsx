@@ -5,11 +5,14 @@ import {
   type DockviewReadyEvent,
   themeDark,
 } from 'dockview-react'
+import { Fab } from './fab/Fab'
+import { FAB_INFO_COMPONENT } from './fab/InfoFlutuante'
 import {
   COMPONENTES_PAINEIS,
   PAINEL_REGISTRY,
   type PainelTipo,
 } from './paineis/registry'
+import type { EstadoBackend } from './paineis/api'
 import { PipelineStreamProvider } from './paineis/stream'
 import './App.css'
 
@@ -63,6 +66,7 @@ const PAINEIS_INICIAIS: PainelInicial[] = [
 ]
 
 let dynamicPanelSequence = 0
+let fabInfoPanelSequence = 0
 
 function addRegisteredPanel(
   api: DockviewApi,
@@ -123,7 +127,7 @@ function isCompatibleLayout(value: unknown): value is LayoutSerializado {
     return (
       panel.id === panelId &&
       typeof panel.contentComponent === 'string' &&
-      panel.contentComponent in PAINEL_REGISTRY
+      panel.contentComponent in COMPONENTES_PAINEIS
     )
   })
 }
@@ -205,6 +209,45 @@ function createDynamicPanel(api: DockviewApi, tipo: PainelTipo) {
   addRegisteredPanel(api, { id, tipo, title })
 }
 
+function createFabInfoPanelId(api: DockviewApi) {
+  let id: string
+
+  do {
+    fabInfoPanelSequence += 1
+    id = `fab-info-${fabInfoPanelSequence}`
+  } while (api.getPanel(id))
+
+  return id
+}
+
+function addFloatingInfoPanel(api: DockviewApi, estado: EstadoBackend) {
+  api.addPanel({
+    id: createFabInfoPanelId(api),
+    component: FAB_INFO_COMPONENT,
+    params: { estado },
+    title: 'Informação adicional',
+    floating: {
+      x: 96,
+      y: 96,
+      width: 360,
+      height: 300,
+    },
+  })
+}
+
+function addPopoutInfoPanel(api: DockviewApi, estado: EstadoBackend) {
+  const panel = api.addPanel({
+    id: createFabInfoPanelId(api),
+    component: FAB_INFO_COMPONENT,
+    params: { estado },
+    title: 'Informação adicional',
+  })
+
+  void api.addPopoutGroup(panel, { popoutUrl: '/popout.html' }).catch((error: unknown) => {
+    console.error('Não foi possível abrir o popout do Dockview.', error)
+  })
+}
+
 function App() {
   const [dockviewApi, setDockviewApi] = useState<DockviewApi>()
   const [tipoSelecionado, setTipoSelecionado] = useState<PainelTipo>('texto')
@@ -273,6 +316,18 @@ function App() {
     }
   }
 
+  function handleOpenFloating(estado: EstadoBackend) {
+    if (dockviewApi) {
+      addFloatingInfoPanel(dockviewApi, estado)
+    }
+  }
+
+  function handleOpenPopout(estado: EstadoBackend) {
+    if (dockviewApi) {
+      addPopoutInfoPanel(dockviewApi, estado)
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="app-toolbar">
@@ -314,6 +369,11 @@ function App() {
           theme={themeDark}
         />
       </PipelineStreamProvider>
+      <Fab
+        dockviewReady={Boolean(dockviewApi)}
+        onOpenFloating={handleOpenFloating}
+        onOpenPopout={handleOpenPopout}
+      />
     </main>
   )
 }

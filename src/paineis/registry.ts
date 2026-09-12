@@ -1,3 +1,4 @@
+import { FAB_INFO_COMPONENT, PainelInfoFlutuante } from '../fab/InfoFlutuante'
 import { PainelDoc } from './Doc'
 import { PainelEstado } from './Estado'
 import { PainelHtml } from './Html'
@@ -121,6 +122,7 @@ export const PAINEL_REGISTRY = {
 export type PainelTipo = keyof typeof PAINEL_REGISTRY
 
 export const COMPONENTES_PAINEIS = {
+  [FAB_INFO_COMPONENT]: PainelInfoFlutuante,
   doc: PAINEL_REGISTRY.doc.component,
   estado: PAINEL_REGISTRY.estado.component,
   html: PAINEL_REGISTRY.html.component,
