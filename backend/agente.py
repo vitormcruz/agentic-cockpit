@@ -131,9 +131,11 @@ async def _run_opencode(prompt: str) -> str:
     stdout_chunks: list[bytes] = []
     stderr_chunks: list[bytes] = []
     last_activity = time.monotonic()
+    first_output_received = False
 
     def register_activity() -> None:
-        nonlocal last_activity
+        nonlocal first_output_received, last_activity
+        first_output_received = True
         last_activity = time.monotonic()
 
     reader_tasks = [
@@ -147,7 +149,11 @@ async def _run_opencode(prompt: str) -> str:
         while not process_wait_task.done():
             now = time.monotonic()
             total_remaining = LLM_TOTAL_TIMEOUT_SECONDS - (now - started_at)
-            idle_remaining = LLM_IDLE_TIMEOUT_SECONDS - (now - last_activity)
+            idle_remaining = (
+                LLM_IDLE_TIMEOUT_SECONDS - (now - last_activity)
+                if not first_output_received
+                else total_remaining
+            )
             wait_for = min(total_remaining, idle_remaining)
 
             if total_remaining <= 0:
@@ -161,7 +167,7 @@ async def _run_opencode(prompt: str) -> str:
                 now = time.monotonic()
                 if now - started_at >= LLM_TOTAL_TIMEOUT_SECONDS:
                     raise AgenteTimeoutError("O agente excedeu o tempo total de resposta.") from error
-                if now - last_activity >= LLM_IDLE_TIMEOUT_SECONDS:
+                if not first_output_received and now - last_activity >= LLM_IDLE_TIMEOUT_SECONDS:
                     raise AgenteTimeoutError("O agente parou de emitir progresso.") from error
 
         await asyncio.gather(*reader_tasks)
@@ -348,14 +354,16 @@ async def process_agent_message(user_text: str) -> RespostaAgente:
 
 
 async def send_thinking_heartbeat(
-    send_event: Callable[[dict[str, Any]], Awaitable[None]],
+    send_event: Callable[[dict[str, Any]], Awaitable[bool]],
 ) -> None:
     started_at = time.monotonic()
     while True:
         await asyncio.sleep(15)
-        await send_event(
+        should_continue = await send_event(
             {
                 "type": "thinking",
                 "elapsed_seconds": round(time.monotonic() - started_at),
             }
         )
+        if not should_continue:
+            return

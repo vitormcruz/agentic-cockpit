@@ -9,6 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, StreamingResponse
+from starlette.websockets import WebSocketState
 
 from .agente import AgenteError, process_agent_message, send_thinking_heartbeat
 from .servicos import InventarioServicosError, detectar_servicos
@@ -141,18 +142,50 @@ async def stream_state() -> StreamingResponse:
     )
 
 
-async def _send_agent_event(websocket: WebSocket, event: dict[str, object]) -> None:
-    await websocket.send_json(event)
+async def _send_agent_event(websocket: WebSocket, event: dict[str, object]) -> bool:
+    if (
+        websocket.client_state != WebSocketState.CONNECTED
+        or websocket.application_state != WebSocketState.CONNECTED
+    ):
+        return False
+
+    try:
+        await websocket.send_json(event)
+    except (RuntimeError, WebSocketDisconnect):
+        return False
+    return True
+
+
+async def _watch_agent_connection(
+    websocket: WebSocket,
+    pending_messages: asyncio.Queue[dict[str, object]],
+    disconnected: asyncio.Event,
+) -> None:
+    try:
+        while True:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.disconnect":
+                return
+            await pending_messages.put(message)
+    except WebSocketDisconnect:
+        return
+    finally:
+        disconnected.set()
 
 
 async def _handle_agent_message(websocket: WebSocket, text: str) -> None:
-    await _send_agent_event(websocket, {"type": "thinking"})
-    heartbeat_task = asyncio.create_task(send_thinking_heartbeat(websocket.send_json))
+    if not await _send_agent_event(websocket, {"type": "thinking"}):
+        return
+
+    heartbeat_task = asyncio.create_task(
+        send_thinking_heartbeat(lambda event: _send_agent_event(websocket, event))
+    )
 
     try:
         response = await process_agent_message(text)
         for command in response.commands:
-            await _send_agent_event(websocket, {"type": "command", "command": command})
+            if not await _send_agent_event(websocket, {"type": "command", "command": command}):
+                return
         await _send_agent_event(websocket, {"type": "message", "text": response.message})
     except AgenteError as error:
         await _send_agent_event(websocket, {"type": "message", "text": str(error)})
@@ -169,27 +202,59 @@ async def _handle_agent_message(websocket: WebSocket, text: str) -> None:
 @app.websocket("/ws/agente")
 async def agent_websocket(websocket: WebSocket) -> None:
     await websocket.accept()
+    pending_messages: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+    disconnected = asyncio.Event()
+    connection_task = asyncio.create_task(
+        _watch_agent_connection(websocket, pending_messages, disconnected)
+    )
+    disconnect_task = asyncio.create_task(disconnected.wait())
 
-    while True:
-        try:
-            payload = await websocket.receive_json()
-        except WebSocketDisconnect:
-            return
-        except (TypeError, ValueError):
-            await _send_agent_event(
-                websocket,
-                {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+    try:
+        while True:
+            receive_task = asyncio.create_task(pending_messages.get())
+            done, _ = await asyncio.wait(
+                {receive_task, disconnect_task},
+                return_when=asyncio.FIRST_COMPLETED,
             )
-            continue
+            if disconnect_task in done:
+                receive_task.cancel()
+                await asyncio.gather(receive_task, return_exceptions=True)
+                return
 
-        if not isinstance(payload, dict) or not isinstance(payload.get("texto"), str):
-            await _send_agent_event(
-                websocket,
-                {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+            message = receive_task.result()
+            try:
+                raw_payload = message.get("text")
+                if not isinstance(raw_payload, str):
+                    raise ValueError
+                payload = json.loads(raw_payload)
+            except (TypeError, ValueError):
+                await _send_agent_event(
+                    websocket,
+                    {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+                )
+                continue
+
+            if not isinstance(payload, dict) or not isinstance(payload.get("texto"), str):
+                await _send_agent_event(
+                    websocket,
+                    {"type": "message", "text": "Envie um objeto JSON com o campo texto."},
+                )
+                continue
+
+            processing_task = asyncio.create_task(_handle_agent_message(websocket, payload["texto"]))
+            done, _ = await asyncio.wait(
+                {processing_task, disconnect_task},
+                return_when=asyncio.FIRST_COMPLETED,
             )
-            continue
+            if disconnect_task in done:
+                processing_task.cancel()
+                await asyncio.gather(processing_task, return_exceptions=True)
+                return
 
-        try:
-            await _handle_agent_message(websocket, payload["texto"])
-        except WebSocketDisconnect:
-            return
+            await processing_task
+    finally:
+        if not disconnect_task.done():
+            disconnect_task.cancel()
+        if not connection_task.done():
+            connection_task.cancel()
+        await asyncio.gather(disconnect_task, connection_task, return_exceptions=True)
