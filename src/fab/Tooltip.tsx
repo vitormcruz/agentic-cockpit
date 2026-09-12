@@ -103,10 +103,6 @@ export function Tooltip({ message }: { message: string }) {
     }
   }, [isOpen])
 
-  function toggleTooltip() {
-    setIsOpen((open) => !open)
-  }
-
   return (
     <>
       <button
@@ -117,10 +113,8 @@ export function Tooltip({ message }: { message: string }) {
         aria-describedby={isOpen ? tooltipId : undefined}
         aria-expanded={isOpen}
         onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => {
-          event.stopPropagation()
-          toggleTooltip()
-        }}
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
       >
         !
       </button>
@@ -132,6 +126,8 @@ export function Tooltip({ message }: { message: string }) {
             className={`floating-card-tooltip floating-card-tooltip--${position.placement}`}
             role="tooltip"
             style={{ left: `${position.left}px`, top: `${position.top}px` }}
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
           >
             {message}
           </div>,
