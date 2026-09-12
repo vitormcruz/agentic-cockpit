@@ -780,6 +780,16 @@
   height: 2.25rem;
 }
 
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container > .dv-scrollable,
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container > .dv-scrollable > .dv-tabs-container,
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container > .dv-scrollable > .dv-tabs-container > .dv-tab {
+  flex-grow: 1;
+}
+
+.dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container > .dv-void-container {
+  flex-grow: 0;
+}
+
 .dv-resize-container:has(.floating-card-tab) .dv-tabs-and-actions-container .dv-tab {
   margin: 0;
   padding: 0;
