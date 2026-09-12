@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DockviewReact,
   type DockviewApi,
@@ -9,6 +9,8 @@ import {
 import { Fab } from './fab/Fab'
 import { CardTab, FLOATING_CARD_TAB_COMPONENT } from './fab/CardTab'
 import { FAB_INFO_COMPONENT } from './fab/InfoFlutuante'
+import { Toast } from './fab/Toast'
+import { AgenteProvider, useAgente } from './agente/useAgente'
 import {
   COMPONENTES_PAINEIS,
   PAINEL_REGISTRY,
@@ -308,10 +310,18 @@ function addPopoutInfoPanel(api: DockviewApi, estado: EstadoBackend) {
 function App() {
   const [dockviewApi, setDockviewApi] = useState<DockviewApi>()
   const [tipoSelecionado, setTipoSelecionado] = useState<PainelTipo>('texto')
+  const [agentNotification, setAgentNotification] = useState<string>()
   const layoutSubscriptionRef = useRef<{ dispose(): void } | undefined>(undefined)
   const dndSubscriptionsRef = useRef<{ dispose(): void }[]>([])
   const persistTimerRef = useRef<number | undefined>(undefined)
   const isApplyingLayoutRef = useRef(false)
+  const handleAgentNotification = useCallback((message: string) => {
+    setAgentNotification(message)
+  }, [])
+  const closeAgentNotification = useCallback(() => {
+    setAgentNotification(undefined)
+  }, [])
+  const agente = useAgente({ api: dockviewApi, onNotify: handleAgentNotification })
 
   useEffect(() => {
     return () => {
@@ -452,21 +462,24 @@ function App() {
           </button>
         </div>
       </header>
-      <PipelineStreamProvider>
-        <DockviewReact
-          className="dockview-host"
-          components={COMPONENTES_PAINEIS}
-          tabComponents={{ [FLOATING_CARD_TAB_COMPONENT]: CardTab }}
-          onReady={handleReady}
-          theme={themeDark}
-        />
-      </PipelineStreamProvider>
+      <AgenteProvider value={agente}>
+        <PipelineStreamProvider>
+          <DockviewReact
+            className="dockview-host"
+            components={COMPONENTES_PAINEIS}
+            tabComponents={{ [FLOATING_CARD_TAB_COMPONENT]: CardTab }}
+            onReady={handleReady}
+            theme={themeDark}
+          />
+        </PipelineStreamProvider>
+      </AgenteProvider>
       <Fab
         dockviewReady={Boolean(dockviewApi)}
         onOpenFloating={handleOpenFloating}
         onOpenFloatingCard={handleOpenFloatingCard}
         onOpenPopout={handleOpenPopout}
       />
+      {agentNotification && <Toast message={agentNotification} onClose={closeAgentNotification} />}
     </main>
   )
 }

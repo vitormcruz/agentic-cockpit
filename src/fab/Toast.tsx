@@ -6,15 +6,16 @@ import { InfoAdicional } from './InfoAdicional'
 const TOAST_DURATION_MS = 3000
 
 type ToastProps = {
-  estado: EstadoBackend
+  estado?: EstadoBackend
+  message?: string
   onClose: () => void
 }
 
-export function Toast({ estado, onClose }: ToastProps) {
+export function Toast({ estado, message, onClose }: ToastProps) {
   useEffect(() => {
     const timeoutId = window.setTimeout(onClose, TOAST_DURATION_MS)
     return () => window.clearTimeout(timeoutId)
-  }, [onClose])
+  }, [message, onClose])
 
   return createPortal(
     <aside className="fab-toast" role="status" aria-live="polite" aria-label="Toast de informação">
@@ -24,7 +25,7 @@ export function Toast({ estado, onClose }: ToastProps) {
           ×
         </button>
       </div>
-      <InfoAdicional estado={estado} />
+      {message ? <p className="fab-toast__message">{message}</p> : estado && <InfoAdicional estado={estado} />}
     </aside>,
     document.body,
   )
