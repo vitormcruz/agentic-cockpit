@@ -10,6 +10,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import PlainTextResponse, StreamingResponse
 
+from .servicos import InventarioServicosError, detectar_servicos
+
 CONFIG_REPO_ENV = "OPENCODE_CONFIG_REPO"
 DEFAULT_CONFIG_REPO = Path(__file__).resolve().parents[2] / "opencode-global-config"
 PIPELINE_STEP_COUNT = 4
@@ -80,6 +82,14 @@ def get_markdown() -> str:
         return markdown_path.read_text(encoding="utf-8")
     except OSError as error:
         raise raise_backend_error(error) from error
+
+
+@app.get("/api/servicos")
+async def get_services() -> list[dict[str, int | str]]:
+    try:
+        return await asyncio.to_thread(detectar_servicos)
+    except (InventarioServicosError, OSError) as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
 
 
 def create_stream_payload(passo: int, state: dict[str, int]) -> dict[str, object]:
