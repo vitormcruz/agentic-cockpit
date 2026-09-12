@@ -82,8 +82,7 @@ def get_markdown() -> str:
         raise raise_backend_error(error) from error
 
 
-def create_stream_payload(passo: int) -> dict[str, object]:
-    state = read_state()
+def create_stream_payload(passo: int, state: dict[str, int]) -> dict[str, object]:
     return {
         "timestamp": current_timestamp(),
         "resumo": state_summary(state),
@@ -93,16 +92,29 @@ def create_stream_payload(passo: int) -> dict[str, object]:
 
 
 async def event_stream() -> AsyncIterator[str]:
+    event_loop = asyncio.get_running_loop()
     passo = 1
-    next_emit_at = asyncio.get_running_loop().time()
+    pending_state: asyncio.Task[dict[str, int]] | None = asyncio.create_task(
+        asyncio.to_thread(read_state)
+    )
+    next_emit_at: float | None = None
 
-    while True:
-        payload = json.dumps(create_stream_payload(passo), ensure_ascii=False)
-        yield f"data: {payload}\n\n"
-        passo = passo % PIPELINE_STEP_COUNT + 1
-        next_emit_at += STREAM_INTERVAL_SECONDS
-        delay = max(0, next_emit_at - asyncio.get_running_loop().time())
-        await asyncio.sleep(delay)
+    try:
+        while True:
+            state = await pending_state
+            if next_emit_at is None:
+                next_emit_at = event_loop.time()
+
+            payload = json.dumps(create_stream_payload(passo, state), ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+            passo = passo % PIPELINE_STEP_COUNT + 1
+            next_emit_at += STREAM_INTERVAL_SECONDS
+            pending_state = asyncio.create_task(asyncio.to_thread(read_state))
+            delay = max(0, next_emit_at - event_loop.time())
+            await asyncio.sleep(delay)
+    finally:
+        if pending_state is not None and not pending_state.done():
+            pending_state.cancel()
 
 
 @app.get("/api/stream")
