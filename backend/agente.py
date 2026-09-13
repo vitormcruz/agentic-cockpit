@@ -19,6 +19,7 @@ LLM_IDLE_TIMEOUT_SECONDS = 45
 LLM_RETRY_COUNT = 1
 MAX_USER_MESSAGE_LENGTH = 4000
 MAX_COMMAND_TEXT_LENGTH = 2000
+MAX_CONTENT_LENGTH = 8 * 1024
 MAX_PANEL_TITLE_LENGTH = 120
 AVAILABLE_PANEL_TYPES = (
     "doc",
@@ -36,8 +37,10 @@ AVAILABLE_PANEL_TYPES = (
     "servicos",
 )
 ALLOWED_COMMANDS = frozenset(
-    {"open_panel", "close_panel", "notify", "message", "update_servicos"}
+    {"open_panel", "open_card", "close_panel", "notify", "message", "update_servicos"}
 )
+CONTENT_PANEL_TYPES = frozenset({"html", "markdown", "mermaid", "texto"})
+CONTENT_FIELDS = frozenset({"content", "definition"})
 NOTIFY_LEVELS = frozenset({"info", "success", "warning", "error"})
 
 SYSTEM_PROMPT = """
@@ -49,11 +52,12 @@ Schema obrigatório:
 {
   "commands": [
     {
-      "name": "open_panel | close_panel | notify | message | update_servicos",
+      "name": "open_panel | open_card | close_panel | notify | message | update_servicos",
       "panel_type": "tipo do painel, quando aplicável",
       "title": "título opcional",
       "floating": false,
       "panel_id": "id opcional",
+      "params": {"definition": "...", "content": "..."},
       "text": "texto, quando aplicável",
       "level": "info | success | warning | error",
       "services": [{"nome": "...", "porta": 1234, "estado": "ativo"}]
@@ -62,7 +66,20 @@ Schema obrigatório:
   "message": "resposta curta para o histórico do chat"
 }
 
-Use apenas os cinco nomes de comando declarados. Não execute ações fora deles.
+Use apenas os seis nomes de comando declarados. Não execute ações fora deles.
+Quando o usuário pedir conteúdo, gere o conteúdo solicitado no comando, em
+params, em vez de usar o conteúdo de demonstração do registry:
+- mermaid: use panel_type "mermaid" e params.definition com a sintaxe Mermaid
+  completa do diagrama pedido, sem cercas de código;
+- markdown: use panel_type "markdown" e params.content com Markdown gerado;
+- texto: use panel_type "texto" e params.content com o texto gerado;
+- html: use panel_type "html" e params.content com HTML gerado.
+Não envie definition/content para tipos que não usam esses campos.
+open_panel aceita title, floating e params. O campo params é o conteúdo que
+será mesclado aos parâmetros do painel.
+open_card abre um floating card sempre flutuante. Ele exige title, panel_type
+entre mermaid, markdown, texto e html, e params com definition ou content
+conforme as regras acima. Use open_card quando o usuário pedir um card.
 Para um pedido sobre servidores ou serviços ativos, inclua open_panel com
 panel_type "servicos" e, quando útil, update_servicos com o contexto recebido.
 Para fechar painéis sem id conhecido, close_panel pode usar panel_type.
@@ -213,6 +230,65 @@ def _bounded_text(value: object, field_name: str, maximum: int = MAX_COMMAND_TEX
     return text
 
 
+def _bounded_content(value: object, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise RespostaAgenteInvalida(f"O campo {field_name} precisa ser texto.")
+
+    if not value.strip():
+        raise RespostaAgenteInvalida(f"O campo {field_name} não pode ficar vazio.")
+    if len(value) > MAX_CONTENT_LENGTH:
+        raise RespostaAgenteInvalida(
+            f"O campo {field_name} excede o limite de {MAX_CONTENT_LENGTH // 1024} KB."
+        )
+
+    return value
+
+
+def _validate_content_params(
+    value: dict[str, Any],
+    panel_type: str | None,
+    *,
+    require_content: bool = False,
+) -> dict[str, Any]:
+    raw_params = value.get("params", {})
+    if not isinstance(raw_params, dict):
+        raise RespostaAgenteInvalida("O campo params precisa ser um objeto.")
+
+    params = dict(raw_params)
+    content_fields: set[str] = set()
+    for field_name in CONTENT_FIELDS:
+        nested_value = params.get(field_name)
+        top_level_value = value.get(field_name)
+        has_nested_value = field_name in params
+        has_top_level_value = field_name in value
+
+        if has_nested_value and has_top_level_value and nested_value != top_level_value:
+            raise RespostaAgenteInvalida(
+                f"O campo {field_name} foi informado com valores diferentes em params e no comando."
+            )
+
+        if not has_nested_value and not has_top_level_value:
+            continue
+
+        content_value = nested_value if has_nested_value else top_level_value
+        params[field_name] = _bounded_content(content_value, f"params.{field_name}")
+        content_fields.add(field_name)
+
+    if len(content_fields) > 1:
+        raise RespostaAgenteInvalida("Envie apenas um campo de conteúdo: definition ou content.")
+    if require_content and not content_fields:
+        raise RespostaAgenteInvalida("O comando precisa informar definition ou content em params.")
+
+    if panel_type == "mermaid" and "content" in content_fields:
+        raise RespostaAgenteInvalida("O painel Mermaid precisa receber o conteúdo em params.definition.")
+    if panel_type in CONTENT_PANEL_TYPES - {"mermaid"} and "definition" in content_fields:
+        raise RespostaAgenteInvalida(
+            f"O painel {panel_type} precisa receber o conteúdo em params.content."
+        )
+
+    return params
+
+
 def _validate_services(value: object) -> list[dict[str, Any]]:
     if not isinstance(value, list):
         raise RespostaAgenteInvalida("O campo services precisa ser uma lista.")
@@ -253,10 +329,30 @@ def _validate_command(value: object) -> dict[str, Any]:
         if value.get("floating", False) is not False and not isinstance(value.get("floating"), bool):
             raise RespostaAgenteInvalida("O campo floating precisa ser booleano.")
         command["floating"] = value.get("floating", False)
-        params = value.get("params", {})
-        if not isinstance(params, dict):
-            raise RespostaAgenteInvalida("O campo params precisa ser um objeto.")
-        command["params"] = params
+        command["params"] = _validate_content_params(value, panel_type)
+        return command
+
+    if name == "open_card":
+        panel_type = value.get("panel_type")
+        if panel_type is not None and panel_type not in CONTENT_PANEL_TYPES:
+            raise RespostaAgenteInvalida(
+                "open_card aceita somente os tipos mermaid, markdown, texto e html."
+            )
+
+        title = value.get("title")
+        if title is None:
+            raise RespostaAgenteInvalida("open_card precisa informar o campo title.")
+
+        params = _validate_content_params(value, panel_type, require_content=True)
+        if panel_type is None:
+            panel_type = "mermaid" if "definition" in params else "markdown"
+
+        command = {
+            "name": name,
+            "panel_type": panel_type,
+            "title": _bounded_text(title, "title", MAX_PANEL_TITLE_LENGTH),
+            "params": params,
+        }
         return command
 
     if name == "close_panel":

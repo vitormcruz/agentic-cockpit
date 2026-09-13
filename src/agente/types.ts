@@ -34,6 +34,8 @@ export type AgenteCommand = {
   text?: string
   level?: string
   services?: Servico[]
+  definition?: string
+  content?: string
   params?: Record<string, unknown>
 }
 

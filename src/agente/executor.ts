@@ -1,8 +1,21 @@
 import type { DockviewApi } from 'dockview-react'
+import { FLOATING_CARD_TAB_COMPONENT } from '../fab/CardTab'
+import { tocarSomAberturaCard } from '../fab/som'
 import { PAINEL_REGISTRY, type PainelTipo } from '../paineis/registry'
 import { isServicos, type AgenteCommand, type Servico } from './types'
 
 let agentPanelSequence = 0
+
+const CARD_PANEL_TYPES = ['html', 'markdown', 'mermaid', 'texto'] as const
+type CardPanelType = (typeof CARD_PANEL_TYPES)[number]
+
+const FLOATING_CARD_POSITION = {
+  x: 128,
+  y: 128,
+  width: 360,
+  height: 300,
+  dragHandle: 'tabbar' as const,
+}
 
 export type ExecutorAgenteCallbacks = {
   api: DockviewApi | undefined
@@ -23,6 +36,22 @@ function getPainelTipo(value: unknown): PainelTipo | undefined {
   return value as PainelTipo
 }
 
+function isCardPanelType(value: PainelTipo): value is CardPanelType {
+  return CARD_PANEL_TYPES.includes(value as CardPanelType)
+}
+
+function getCommandParams(command: Record<string, unknown>) {
+  const params = isRecord(command.params) ? { ...command.params } : {}
+
+  for (const field of ['definition', 'content']) {
+    if (!(field in params) && typeof command[field] === 'string') {
+      params[field] = command[field]
+    }
+  }
+
+  return params
+}
+
 function addPanel(api: DockviewApi, command: Record<string, unknown>) {
   const panelType = getPainelTipo(command.panel_type)
   if (!panelType) {
@@ -31,7 +60,7 @@ function addPanel(api: DockviewApi, command: Record<string, unknown>) {
 
   agentPanelSequence += 1
   const panelDefinition = PAINEL_REGISTRY[panelType]
-  const commandParams = isRecord(command.params) ? command.params : {}
+  const commandParams = getCommandParams(command)
   const title = typeof command.title === 'string' ? command.title : panelDefinition.label
 
   const panelOptions = {
@@ -57,6 +86,58 @@ function addPanel(api: DockviewApi, command: Record<string, unknown>) {
   api.addPanel(panelOptions)
 }
 
+function getCardPanelType(command: Record<string, unknown>, params: Record<string, unknown>) {
+  if (command.panel_type !== undefined) {
+    const requestedType = getPainelTipo(command.panel_type)
+    if (!requestedType) {
+      throw new Error('O tipo de conteúdo do floating card não está disponível.')
+    }
+    if (!isCardPanelType(requestedType)) {
+      throw new Error('O floating card aceita somente conteúdo Mermaid, Markdown, texto ou HTML.')
+    }
+
+    return requestedType
+  }
+
+  if (typeof params.definition === 'string') {
+    return 'mermaid'
+  }
+  if (typeof params.content === 'string') {
+    return 'markdown'
+  }
+
+  throw new Error('O floating card precisa de um tipo e de conteúdo.')
+}
+
+function validateCardContent(panelType: CardPanelType, params: Record<string, unknown>) {
+  const contentField = panelType === 'mermaid' ? 'definition' : 'content'
+  const content = params[contentField]
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new Error(`O floating card precisa de conteúdo em ${contentField}.`)
+  }
+}
+
+function addFloatingCard(api: DockviewApi, command: Record<string, unknown>) {
+  const commandParams = getCommandParams(command)
+  const panelType = getCardPanelType(command, commandParams)
+  validateCardContent(panelType, commandParams)
+
+  agentPanelSequence += 1
+  const panelDefinition = PAINEL_REGISTRY[panelType]
+  const title = typeof command.title === 'string' ? command.title : 'Card do agente'
+  const panel = api.addPanel({
+    id: `agente-card-${agentPanelSequence}`,
+    component: panelType,
+    tabComponent: FLOATING_CARD_TAB_COMPONENT,
+    params: { ...panelDefinition.params, ...commandParams },
+    title,
+    floating: FLOATING_CARD_POSITION,
+  })
+
+  panel.group.api.locked = 'no-drop-target'
+  tocarSomAberturaCard()
+}
+
 function closePanel(api: DockviewApi, command: Record<string, unknown>) {
   const panelId = typeof command.panel_id === 'string' ? command.panel_id : undefined
   const panelType = getPainelTipo(command.panel_type)
@@ -79,6 +160,13 @@ function executeCommand(command: Record<string, unknown>, callbacks: ExecutorAge
         return
       }
       addPanel(callbacks.api, command)
+      return
+    case 'open_card':
+      if (!callbacks.api) {
+        callbacks.onNotify('O layout ainda não está pronto para abrir um floating card.')
+        return
+      }
+      addFloatingCard(callbacks.api, command)
       return
     case 'close_panel':
       if (callbacks.api) {
