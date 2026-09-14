@@ -98,6 +98,20 @@ morph-like → funcionalidades da v1 → revisão/validação.)
 | Escopo da v1 inflar | Médio | triagem explícita antes das tasks |
 |Seletores internos `dv-*` do Dockview frágeis | Baixo | já escopados; testar em upgrades |
 
+## Como retomar (handoff para a próxima sessão)
+
+- **Estado:** esboço commitado e publicado; experimento transplantado
+  com histórico; decisões D1-D8 fechadas.
+- **Próximo passo:** responder as Open Questions 1-5 (triagem da v1) e
+  detalhar a Task List por fases, com executor + revisor independente +
+  validação humana por ciclo (modelo de execução em D8).
+- **Ambiente:** clone local em `/mnt/e/Projetos/agentic-cockpit`
+  (identidade git local configurada). Dev servers do EXPERIMENTO podem
+  estar ativos nas portas 5176/8000 (Vite + FastAPI do
+  `painel-dinamico-lab`) — parar antes de rodar o cockpit daqui.
+- **Convenções:** commits Conventional Commits em PT-BR; push autorizado
+  neste repo pelo humano; linhas de arquivo MD ≤120 colunas.
+
 ## Referências
 
 - Relatório de pesquisa: `docs/pesquisa-agentic-ui.md` (neste repo)
